@@ -1,0 +1,89 @@
+<div class="auth">
+  <aside class="auth-aside">
+    <div>
+      <h2>Auction day, organised.</h2>
+      <p>Sign in to manage teams and the player pool, or to run the sale.</p>
+      <ul class="auth-points">
+        <li><i class="bi bi-wallet2" aria-hidden="true"></i><span>Every team's remaining budget, updated with each sale</span></li>
+        <li><i class="bi bi-shield-check" aria-hidden="true"></i><span>Sales over budget are blocked before they happen</span></li>
+        <li><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i><span>Release a player back to the pool at any time</span></li>
+      </ul>
+    </div>
+    <span class="auth-foot">Auction League</span>
+  </aside>
+
+  <div class="auth-main">
+    <section class="auth-card" aria-labelledby="login-title">
+      <h1 id="login-title">Sign in</h1>
+      <p class="auth-lead">Welcome back. Enter your account details.</p>
+
+      <div class="alert alert-danger" role="alert" *ngIf="errorMessage">
+        <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <form (ngSubmit)="login()" novalidate>
+
+        <div class="field">
+          <label class="form-label" for="username">Username</label>
+          <div class="input-icon">
+            <i class="bi bi-person" aria-hidden="true"></i>
+            <input
+              id="username"
+              name="username"
+              type="text"
+              class="form-control"
+              autocomplete="username"
+              placeholder="Your username"
+              [class.is-invalid]="usernameError"
+              [attr.aria-invalid]="!!usernameError"
+              [attr.aria-describedby]="usernameError ? 'username-error' : null"
+              [(ngModel)]="username"
+              (blur)="onUsernameBlur()"
+            />
+          </div>
+          <label id="username-error" class="error-message" for="username" *ngIf="usernameError">
+            {{ usernameError }}
+          </label>
+        </div>
+
+        <div class="field">
+          <label class="form-label" for="password">Password</label>
+          <div class="input-group" [class.is-invalid]="passwordError">
+            <input
+              id="password"
+              name="password"
+              class="form-control"
+              autocomplete="current-password"
+              placeholder="Your password"
+              [type]="showPassword ? 'text' : 'password'"
+              [attr.aria-invalid]="!!passwordError"
+              [attr.aria-describedby]="passwordError ? 'password-error' : null"
+              [(ngModel)]="password"
+              (blur)="onPasswordBlur()"
+            />
+            <button type="button" class="btn btn-reveal" (click)="showPassword = !showPassword"
+                    [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+                    [attr.aria-pressed]="showPassword">
+              <i class="bi" [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'" aria-hidden="true"></i>
+            </button>
+          </div>
+          <label id="password-error" class="error-message" for="password" *ngIf="passwordError">
+            {{ passwordError }}
+          </label>
+        </div>
+
+        <button class="btn btn-primary btn-lg w-100 mt-2" type="submit" [disabled]="loading">
+          <span *ngIf="loading" class="spinner-border" role="status" aria-hidden="true"></span>
+          {{ loading ? 'Signing in…' : 'Sign in' }}
+        </button>
+
+        <p class="auth-switch">
+          No account yet?
+          <a routerLink="/signup">Create one</a>
+        </p>
+
+      </form>
+    </section>
+  </div>
+</div>

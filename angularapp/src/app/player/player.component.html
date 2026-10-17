@@ -1,0 +1,199 @@
+<div class="player-list-wrap">
+  <section class="panel" aria-labelledby="roster-heading">
+    <div class="panel-head">
+      <div>
+        <h2 id="roster-heading" class="panel-title">
+          Player pool <span class="badge-count">{{ players.length }}</span>
+        </h2>
+        <p class="panel-sub">Every player, sold or unsold.</p>
+      </div>
+      <div class="panel-tools">
+        <ng-container *ngIf="players.length > 0">
+          <div class="input-icon">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input type="search" class="form-control form-control-sm" placeholder="Search players"
+                   aria-label="Search players" name="playerSearch" [(ngModel)]="query" />
+          </div>
+          <select class="form-select form-select-sm w-auto" aria-label="Filter by category"
+                  name="categoryFilter" [(ngModel)]="categoryFilter">
+            <option value="All">All categories</option>
+            <option *ngFor="let c of filterCategories" [value]="c">{{ c }}</option>
+          </select>
+          <select class="form-select form-select-sm w-auto" aria-label="Filter by status"
+                  name="statusFilter" [(ngModel)]="statusFilter">
+            <option value="all">Any status</option>
+            <option value="unsold">Unsold</option>
+            <option value="sold">Sold</option>
+          </select>
+        </ng-container>
+        <button type="button" class="btn btn-primary btn-sm" (click)="openCreate()">
+          <i class="bi bi-plus-lg" aria-hidden="true"></i> Add player
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading && players.length === 0" aria-busy="true" aria-label="Loading players">
+      <div class="skeleton-row" *ngFor="let r of [1, 2, 3, 4]">
+        <span class="skeleton circle"></span>
+        <span class="skeleton" style="width: 28%"></span>
+        <span class="skeleton" style="width: 12%"></span>
+        <span class="skeleton ms-auto" style="width: 14%"></span>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div *ngIf="!loading && loadError" class="state state-error" role="alert">
+      <div class="state-icon"><i class="bi bi-wifi-off" aria-hidden="true"></i></div>
+      <h3 class="state-title">Players could not be loaded</h3>
+      <p class="state-text">{{ loadError }}</p>
+      <button type="button" class="btn btn-light btn-sm" (click)="retry.emit()">
+        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Try again
+      </button>
+    </div>
+
+    <!-- Empty -->
+    <div *ngIf="!loading && !loadError && players.length === 0" class="state">
+      <div class="state-icon"><i class="bi bi-person-plus" aria-hidden="true"></i></div>
+      <h3 class="state-title">The player pool is empty</h3>
+      <p class="state-text">Add players with their age, category and bidding price. They start unsold, ready for the auction.</p>
+      <button type="button" class="btn btn-primary btn-sm" (click)="openCreate()">
+        <i class="bi bi-plus-lg" aria-hidden="true"></i> Add player
+      </button>
+    </div>
+
+    <!-- No filter results -->
+    <div *ngIf="players.length > 0 && filteredPlayers.length === 0" class="state">
+      <div class="state-icon"><i class="bi bi-funnel" aria-hidden="true"></i></div>
+      <h3 class="state-title">No players match these filters</h3>
+      <button type="button" class="btn btn-light btn-sm" (click)="clearFilters()">Clear filters</button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive" *ngIf="filteredPlayers.length > 0">
+      <table class="table table-app table-hover table-stack">
+        <caption class="visually-hidden">Players with category, price and sale status</caption>
+        <thead>
+          <tr>
+            <th scope="col">Player</th>
+            <th scope="col">Category</th>
+            <th scope="col" class="col-num">Bidding price</th>
+            <th scope="col">Status</th>
+            <th scope="col" class="col-actions"><span class="visually-hidden">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let player of filteredPlayers; trackBy: trackById"
+              [class.row-flash]="player.id === highlightId">
+            <td class="cell-lead">
+              <div class="entity">
+                <span class="entity-avatar" aria-hidden="true">{{ initial(player.name) }}</span>
+                <div class="entity-text">
+                  <span class="cell-primary" [title]="player.name">{{ player.name }}</span>
+                  <span class="cell-sub">Age {{ player.age }}</span>
+                </div>
+              </div>
+            </td>
+            <td data-label="Category"><span [ngClass]="categoryClass(player.category)">{{ player.category }}</span></td>
+            <td class="col-num" data-label="Bidding price"><span class="num">{{ player.biddingPrice | number }}</span></td>
+            <td data-label="Status">
+              <span *ngIf="player.sold" class="badge-soft badge-sold">Sold</span>
+              <span *ngIf="!player.sold" class="badge-soft badge-unsold">Unsold</span>
+              <span *ngIf="player.sold" class="cell-sub d-inline d-md-block ms-2 ms-md-0 mt-md-1">
+                {{ player.team?.name || 'No team' }}
+              </span>
+            </td>
+            <td class="col-actions">
+              <button type="button" class="btn btn-quiet btn-sm" (click)="onEditPlayer(player)"
+                      [attr.aria-label]="'Edit ' + player.name">
+                <i class="bi bi-pencil" aria-hidden="true"></i> Edit
+              </button>
+              <button type="button" class="btn btn-quiet-danger btn-sm" (click)="onDeletePlayer(player.id)"
+                      [attr.aria-label]="'Delete ' + player.name">
+                <i class="bi bi-trash3" aria-hidden="true"></i> Delete
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Create / edit modal -->
+  <ng-container *ngIf="formOpen">
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true"
+         aria-labelledby="player-form-title" (click)="onBackdrop($event)">
+      <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" (ngSubmit)="submit()" novalidate autocomplete="off">
+          <div class="modal-header">
+            <h2 id="player-form-title" class="modal-title">{{ isEdit ? 'Edit player' : 'Add a player' }}</h2>
+            <button type="button" class="btn-close" aria-label="Close" (click)="onCancelEditPlayer()"></button>
+          </div>
+
+          <div class="modal-body">
+            <div class="alert alert-danger" role="alert" *ngIf="formError">
+              <i class="bi bi-exclamation-circle" aria-hidden="true"></i><span>{{ formError }}</span>
+            </div>
+            <div class="alert alert-warning" *ngIf="ownerTeam">
+              <i class="bi bi-info-circle" aria-hidden="true"></i>
+              <span>This player is sold to <strong>{{ ownerTeam.name }}</strong>. A new price must still fit that team's budget.</span>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="playerName">Name<span class="req" aria-hidden="true">*</span></label>
+                <input #firstField #nameCtl="ngModel" id="playerName" name="playerName" type="text" class="form-control"
+                       placeholder="e.g. Virat Kohli" maxlength="80"
+                       [class.is-invalid]="(nameCtl.touched || submitted) && nameError"
+                       [(ngModel)]="model.name" />
+                <div class="error-message" *ngIf="(nameCtl.touched || submitted) && nameError">{{ nameError }}</div>
+              </div>
+
+              <div class="col-sm-5">
+                <label class="form-label" for="playerAge">Age<span class="req" aria-hidden="true">*</span></label>
+                <input #ageCtl="ngModel" id="playerAge" name="playerAge" type="number" class="form-control"
+                       placeholder="15 to 50" min="15" max="50" step="1" inputmode="numeric"
+                       [class.is-invalid]="(ageCtl.touched || submitted) && ageError"
+                       [(ngModel)]="model.age" />
+                <div class="error-message" *ngIf="(ageCtl.touched || submitted) && ageError">{{ ageError }}</div>
+              </div>
+
+              <div class="col-sm-7">
+                <label class="form-label" for="playerCategory">Category<span class="req" aria-hidden="true">*</span></label>
+                <select #catCtl="ngModel" id="playerCategory" name="playerCategory" class="form-select"
+                        [class.is-invalid]="(catCtl.touched || submitted) && categoryError"
+                        [(ngModel)]="model.category">
+                  <option value="" disabled>Select a category</option>
+                  <option *ngFor="let c of categories" [value]="c">{{ c }}</option>
+                  <option *ngIf="model.category && categories.indexOf(model.category) === -1" [value]="model.category">
+                    {{ model.category }}
+                  </option>
+                </select>
+                <div class="error-message" *ngIf="(catCtl.touched || submitted) && categoryError">{{ categoryError }}</div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label" for="playerPrice">Bidding price<span class="req" aria-hidden="true">*</span></label>
+                <input #priceCtl="ngModel" id="playerPrice" name="playerPrice" type="number" class="form-control"
+                       placeholder="e.g. 200000" min="1" step="any" inputmode="decimal"
+                       [class.is-invalid]="(priceCtl.touched || submitted) && priceError"
+                       [(ngModel)]="model.biddingPrice" />
+                <div class="error-message" *ngIf="(priceCtl.touched || submitted) && priceError">{{ priceError }}</div>
+                <div class="form-text" *ngIf="!((priceCtl.touched || submitted) && priceError)">{{ biddingPriceStatus() }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light" (click)="onCancelEditPlayer()" [disabled]="saving">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="saving">
+              <span *ngIf="saving" class="spinner-border" role="status" aria-hidden="true"></span>
+              {{ saving ? 'Saving…' : (isEdit ? 'Save changes' : 'Add player') }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </ng-container>
+</div>

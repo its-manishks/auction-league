@@ -1,0 +1,109 @@
+<div class="page">
+  <div class="container-app">
+
+    <header class="page-header">
+      <div>
+        <nav aria-label="Breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Admin dashboard</li>
+          </ol>
+        </nav>
+        <h1 class="page-title">Admin dashboard</h1>
+        <p class="page-subtitle">Set up teams and their budgets, and manage the pool of players up for auction.</p>
+      </div>
+      <div class="page-actions">
+        <button type="button" class="btn btn-light" (click)="retryAll()" [disabled]="loadingTeams || loadingPlayers"
+                aria-label="Refresh data">
+          <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+          <span class="d-none d-sm-inline">Refresh</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="alert alert-danger" role="alert" *ngIf="teamsError && playersError">
+      <i class="bi bi-wifi-off" aria-hidden="true"></i>
+      <span class="flex-grow-1">{{ teamsError }}</span>
+      <button type="button" class="btn btn-sm btn-light" (click)="retryAll()">Try again</button>
+    </div>
+
+    <section class="stat-strip" aria-label="Auction summary">
+      <div class="stat">
+        <span class="stat-label"><i class="bi bi-shield" aria-hidden="true"></i> Teams</span>
+        <span class="stat-value">{{ teams.length }}</span>
+        <div class="stat-note">Combined budget {{ totalBudget | number }}</div>
+      </div>
+      <div class="stat">
+        <span class="stat-label"><i class="bi bi-people" aria-hidden="true"></i> Players in pool</span>
+        <span class="stat-value">{{ players.length }}</span>
+        <div class="stat-note">{{ unsoldCount }} still unsold</div>
+      </div>
+      <div class="stat">
+        <span class="stat-label"><i class="bi bi-check2-circle" aria-hidden="true"></i> Sold</span>
+        <span class="stat-value">{{ soldCount }}</span>
+        <div class="stat-note">
+          {{ players.length ? ((soldCount / players.length) * 100 | number: '1.0-0') : 0 }}% of the pool
+        </div>
+      </div>
+      <div class="stat">
+        <span class="stat-label"><i class="bi bi-wallet2" aria-hidden="true"></i> Spent so far</span>
+        <span class="stat-value">{{ totalSpent | number }}</span>
+        <div class="stat-note">
+          {{ totalBudget ? ((totalSpent / totalBudget) * 100 | number: '1.0-0') : 0 }}% of all budgets
+        </div>
+      </div>
+    </section>
+
+    <div class="tabs" role="tablist" aria-label="Manage">
+      <button type="button" role="tab" id="tab-teams" aria-controls="panel-teams"
+              [class.active]="activeTab === 'teams'" [attr.aria-selected]="activeTab === 'teams'"
+              (click)="activeTab = 'teams'">
+        <i class="bi bi-shield" aria-hidden="true"></i> Teams
+        <span class="badge-count">{{ teams.length }}</span>
+      </button>
+      <button type="button" role="tab" id="tab-players" aria-controls="panel-players"
+              [class.active]="activeTab === 'players'" [attr.aria-selected]="activeTab === 'players'"
+              (click)="activeTab = 'players'">
+        <i class="bi bi-people" aria-hidden="true"></i> Players
+        <span class="badge-count">{{ players.length }}</span>
+      </button>
+    </div>
+
+    <div id="panel-teams" role="tabpanel" aria-labelledby="tab-teams" [hidden]="activeTab !== 'teams'">
+      <app-team
+        [teams]="teams"
+        [spentByTeam]="spentByTeam"
+        [squadSize]="squadSize"
+        [loading]="loadingTeams"
+        [loadError]="teamsError"
+        [saving]="savingTeam"
+        [highlightId]="highlightTeamId"
+        (createTeamEvent)="createTeam($event)"
+        (editTeamEvent)="editTeam($event)"
+        (saveEditedTeamEvent)="saveEditedTeam($event)"
+        (cancelEditTeamEvent)="cancelEditTeam()"
+        (deleteTeamEvent)="deleteTeam($event)"
+        (retry)="getTeams()">
+      </app-team>
+    </div>
+
+    <div id="panel-players" role="tabpanel" aria-labelledby="tab-players" [hidden]="activeTab !== 'players'">
+      <app-player
+        [players]="players"
+        [teams]="teams"
+        [spentByTeam]="spentByTeam"
+        [loading]="loadingPlayers"
+        [loadError]="playersError"
+        [saving]="savingPlayer"
+        [highlightId]="highlightPlayerId"
+        (createPlayerEvent)="createPlayer($event)"
+        (editPlayerEvent)="editPlayer($event)"
+        (saveEditedPlayerEvent)="saveEditedPlayer($event)"
+        (cancelEditPlayerEvent)="cancelEditPlayer()"
+        (deletePlayerEvent)="deletePlayer($event)"
+        (retry)="getPlayers()">
+      </app-player>
+    </div>
+
+  </div>
+</div>

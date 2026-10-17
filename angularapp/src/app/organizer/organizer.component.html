@@ -1,0 +1,250 @@
+<div class="page">
+  <div class="container-app">
+
+    <header class="page-header">
+      <div>
+        <nav aria-label="Breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Auction room</li>
+          </ol>
+        </nav>
+        <h1 class="page-title">Auction room</h1>
+        <p class="page-subtitle">Sell unsold players to teams. A sale only goes through if the team can still afford the player.</p>
+      </div>
+      <div class="page-actions">
+        <button type="button" class="btn btn-light" (click)="refresh()" [disabled]="loadingTeams || loadingUnsold"
+                aria-label="Refresh data">
+          <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+          <span class="d-none d-sm-inline">Refresh</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="alert alert-danger" role="alert" *ngIf="errorMessage">
+      <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+      <span class="flex-grow-1">{{ errorMessage }}</span>
+      <button type="button" class="btn btn-sm btn-light" (click)="refresh()">Try again</button>
+    </div>
+
+    <section class="stat-strip" aria-label="Auction summary">
+      <div class="stat">
+        <span class="stat-label"><i class="bi bi-hourglass-split" aria-hidden="true"></i> Unsold</span>
+        <span class="stat-value">{{ unsoldPlayers.length }}</span>
+        <div class="stat-note">Waiting to be sold</div>
+      </div>
+      <div class="stat">
+        <span class="stat-label"><i class="bi bi-check2-circle" aria-hidden="true"></i> Sold</span>
+        <span class="stat-value">{{ soldPlayers.length }}</span>
+        <div class="stat-note">Across {{ teams.length }} {{ teams.length === 1 ? 'team' : 'teams' }}</div>
+      </div>
+      <div class="stat">
+        <span class="stat-label"><i class="bi bi-cash-stack" aria-hidden="true"></i> Spent</span>
+        <span class="stat-value">{{ totalSpent | number }}</span>
+        <div class="stat-note">On sold players</div>
+      </div>
+      <div class="stat">
+        <span class="stat-label"><i class="bi bi-wallet2" aria-hidden="true"></i> Purse left</span>
+        <span class="stat-value">{{ totalPurseLeft | number }}</span>
+        <div class="stat-note">All teams combined</div>
+      </div>
+    </section>
+
+    <div class="row g-4">
+
+      <!-- ============ Unsold players ============ -->
+      <div class="col-lg-8">
+        <section class="panel" aria-labelledby="unsold-heading">
+          <div class="panel-head">
+            <div>
+              <h2 id="unsold-heading" class="panel-title">
+                Unsold players <span class="badge-count">{{ unsoldPlayers.length }}</span>
+              </h2>
+              <p class="panel-sub">Choose a team for a player, then sell.</p>
+            </div>
+            <div class="panel-tools" *ngIf="unsoldPlayers.length > 0">
+              <div class="input-icon">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input type="search" class="form-control form-control-sm" placeholder="Search players"
+                       aria-label="Search unsold players" [(ngModel)]="query" />
+              </div>
+            </div>
+          </div>
+
+          <div class="px-3 px-sm-4 pt-3" *ngIf="categories.length > 2">
+            <div class="filter-chips" role="group" aria-label="Filter by category">
+              <button type="button" class="filter-chip" *ngFor="let category of categories"
+                      [class.active]="selectedCategory === category"
+                      [attr.aria-pressed]="selectedCategory === category"
+                      (click)="selectedCategory = category">
+                {{ category === 'All' ? 'All categories' : category }}<span class="n">{{ categoryCount(category) }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Loading -->
+          <div *ngIf="loadingUnsold && unsoldPlayers.length === 0" aria-busy="true" aria-label="Loading players">
+            <div class="skeleton-row" *ngFor="let r of [1, 2, 3, 4]">
+              <span class="skeleton circle"></span>
+              <span class="skeleton" style="width: 30%"></span>
+              <span class="skeleton ms-auto" style="width: 30%"></span>
+            </div>
+          </div>
+
+          <!-- Empty -->
+          <div class="state" *ngIf="!loadingUnsold && !errorMessage && unsoldPlayers.length === 0">
+            <div class="state-icon"><i class="bi bi-trophy" aria-hidden="true"></i></div>
+            <h3 class="state-title">Every player is sold</h3>
+            <p class="state-text">There is no one left in the unsold pool. Release a player from a team to put them back up for sale.</p>
+          </div>
+
+          <!-- No teams to sell to -->
+          <div class="alert alert-warning mx-3 mx-sm-4 mt-3 mb-0" *ngIf="!loadingTeams && teams.length === 0 && unsoldPlayers.length > 0">
+            <i class="bi bi-info-circle" aria-hidden="true"></i>
+            <span>There are no teams yet. An admin needs to create teams before players can be sold.</span>
+          </div>
+
+          <!-- Filtered empty -->
+          <div class="state" *ngIf="unsoldPlayers.length > 0 && filteredPlayers.length === 0">
+            <div class="state-icon"><i class="bi bi-funnel" aria-hidden="true"></i></div>
+            <h3 class="state-title">No unsold players match</h3>
+            <button type="button" class="btn btn-light btn-sm" (click)="query = ''; selectedCategory = 'All'">Clear filters</button>
+          </div>
+
+          <div class="table-responsive mt-2" *ngIf="filteredPlayers.length > 0">
+            <table class="table table-app table-hover table-stack">
+              <caption class="visually-hidden">Unsold players and the team to sell each to</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Player</th>
+                  <th scope="col">Category</th>
+                  <th scope="col" class="col-num">Price</th>
+                  <th scope="col" class="text-end">Sell to</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let player of filteredPlayers; trackBy: trackById">
+                  <td class="cell-lead">
+                    <div class="entity">
+                      <span class="entity-avatar" aria-hidden="true">{{ initial(player.name) }}</span>
+                      <div class="entity-text">
+                        <span class="cell-primary" [title]="player.name">{{ player.name }}</span>
+                        <span class="cell-sub">Age {{ player.age }}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td data-label="Category"><span [ngClass]="categoryClass(player.category)">{{ player.category }}</span></td>
+                  <td class="col-num" data-label="Price"><span class="num">{{ player.biddingPrice | number }}</span></td>
+                  <td class="text-end">
+                    <div class="assign-controls">
+                      <select class="form-select form-select-sm" [attr.aria-label]="'Team to sell ' + player.name + ' to'"
+                              [class.is-invalid]="assignErrorMessages[player.id]"
+                              [(ngModel)]="player.selectedTeamId"
+                              (ngModelChange)="assignErrorMessages[player.id] = ''"
+                              [disabled]="teams.length === 0 || assigningId === player.id">
+                        <option [ngValue]="null">Select team</option>
+                        <option *ngFor="let team of teams" [ngValue]="team.id" [disabled]="!canAfford(team, player)">
+                          {{ team.name }} ({{ canAfford(team, player) ? '' : 'only ' }}{{ purse(team).left | number }} left)
+                        </option>
+                      </select>
+                      <button type="button" class="btn btn-primary btn-sm"
+                              [disabled]="assigningId !== null || teams.length === 0"
+                              (click)="assignPlayerToTeam(player.id, player.selectedTeamId)">
+                        <span *ngIf="assigningId === player.id" class="spinner-border" role="status" aria-hidden="true"></span>
+                        <i *ngIf="assigningId !== player.id" class="bi bi-hammer" aria-hidden="true"></i>
+                        {{ assigningId === player.id ? 'Selling…' : 'Sell' }}
+                      </button>
+                    </div>
+                    <div class="error-message text-end" role="alert" *ngIf="assignErrorMessages[player.id]">
+                      {{ assignErrorMessages[player.id] }}
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- ============ Team purses ============ -->
+      <div class="col-lg-4">
+        <section class="panel" aria-labelledby="teams-heading">
+          <div class="panel-head">
+            <div>
+              <h2 id="teams-heading" class="panel-title">
+                Team purses <span class="badge-count">{{ teams.length }}</span>
+              </h2>
+              <p class="panel-sub">Open a team to see its squad.</p>
+            </div>
+          </div>
+
+          <div *ngIf="loadingTeams && teams.length === 0" aria-busy="true" aria-label="Loading teams">
+            <div class="skeleton-row" *ngFor="let r of [1, 2, 3]">
+              <span class="skeleton circle"></span>
+              <span class="skeleton" style="width: 60%"></span>
+            </div>
+          </div>
+
+          <div class="state" *ngIf="!loadingTeams && teams.length === 0">
+            <div class="state-icon"><i class="bi bi-shield" aria-hidden="true"></i></div>
+            <h3 class="state-title">No teams yet</h3>
+            <p class="state-text">Teams appear here once an admin creates them.</p>
+          </div>
+
+          <ul class="team-list" *ngIf="teams.length > 0">
+            <li class="team-item" *ngFor="let team of teams; trackBy: trackById" [class.open]="showList[team.id!]">
+              <button type="button" class="team-item-head" (click)="toggleList(team.id)"
+                      [attr.aria-expanded]="!!showList[team.id!]" [attr.aria-controls]="'squad-' + team.id">
+                <span class="entity-avatar team" aria-hidden="true">{{ initial(team.name) }}</span>
+                <span class="d-block" style="min-width: 0">
+                  <span class="team-item-name">
+                    <span [title]="team.name">{{ team.name }}</span>
+                    <span class="badge-count">{{ squadCount[team.id!] || 0 }}</span>
+                  </span>
+                  <span class="purse d-block" [ngClass]="purse(team).state">
+                    <span class="purse-figures">
+                      <span>of {{ team.maximumBudget | number }}</span>
+                      <span class="purse-left">{{ purse(team).left | number }} left</span>
+                    </span>
+                    <span class="purse-track d-block" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+                          [attr.aria-valuenow]="purse(team).percent | number: '1.0-0'"
+                          [attr.aria-label]="team.name + ' budget spent'">
+                      <span class="purse-fill" [style.width.%]="purse(team).percent"></span>
+                    </span>
+                  </span>
+                </span>
+                <i class="bi bi-chevron-down chev" aria-hidden="true"></i>
+                <span class="visually-hidden">{{ showList[team.id!] ? 'Hide players' : 'View players' }}</span>
+              </button>
+
+              <div class="squad" [id]="'squad-' + team.id" *ngIf="showList[team.id!]">
+                <div class="squad-empty" *ngIf="loadingSquad[team.id!] && !teamPlayers[team.id!]">
+                  <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Loading squad…
+                </div>
+
+                <div class="squad-row" *ngFor="let player of (teamPlayers[team.id!] || []); trackBy: trackById">
+                  <span class="squad-name" [title]="player.name">{{ player.name }}</span>
+                  <span [ngClass]="categoryClass(player.category)">{{ player.category }}</span>
+                  <span class="num">{{ player.biddingPrice | number }}</span>
+                  <button type="button" class="btn btn-quiet-danger btn-sm"
+                          [disabled]="releasingId === player.id"
+                          [attr.aria-label]="'Release ' + player.name"
+                          (click)="releasePlayerFromTeam(player.id, team.id)">
+                    <span *ngIf="releasingId === player.id" class="spinner-border" role="status" aria-hidden="true"></span>
+                    Release
+                  </button>
+                </div>
+
+                <div class="squad-empty"
+                     *ngIf="!loadingSquad[team.id!] && (!teamPlayers[team.id!] || teamPlayers[team.id!].length === 0)">
+                  No players assigned to this team.
+                </div>
+              </div>
+            </li>
+          </ul>
+        </section>
+      </div>
+
+    </div>
+  </div>
+</div>

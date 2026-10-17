@@ -1,0 +1,56 @@
+<nav class="app-nav" aria-label="Primary">
+  <div class="container-app app-nav-inner">
+
+    <a class="brand" routerLink="/" aria-label="Auction League home">
+      <span class="brand-mark" aria-hidden="true">AL</span>
+      <span class="brand-name">Auction League</span>
+    </a>
+
+    <button type="button" class="nav-toggle" (click)="toggleMenu()"
+            [attr.aria-expanded]="menuOpen" aria-controls="primary-menu"
+            [attr.aria-label]="menuOpen ? 'Close menu' : 'Open menu'">
+      <i class="bi" [ngClass]="menuOpen ? 'bi-x-lg' : 'bi-list'" aria-hidden="true"></i>
+    </button>
+
+    <div id="primary-menu" class="app-nav-menu" [class.open]="menuOpen">
+      <ul class="app-nav-links">
+        <li>
+          <a routerLink="/" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }"
+             class="app-nav-link">
+            <i class="bi bi-house" aria-hidden="true"></i> Home
+          </a>
+        </li>
+        <li *ngIf="isAdmin">
+          <a routerLink="/admin" routerLinkActive="is-active" class="app-nav-link">
+            <i class="bi bi-grid-1x2" aria-hidden="true"></i> Admin dashboard
+          </a>
+        </li>
+        <li *ngIf="isOrganizer">
+          <a routerLink="/organizer" routerLinkActive="is-active" class="app-nav-link">
+            <i class="bi bi-hammer" aria-hidden="true"></i> Auction room
+          </a>
+        </li>
+      </ul>
+
+      <div class="app-nav-session guest" *ngIf="!isLoggedIn">
+        <a class="btn btn-light btn-sm" routerLink="/login">Sign in</a>
+        <a class="btn btn-primary btn-sm" routerLink="/signup">Create account</a>
+      </div>
+
+      <div class="app-nav-session" *ngIf="isLoggedIn">
+        <div class="user-chip">
+          <span class="user-avatar" aria-hidden="true">{{ initials }}</span>
+          <span class="user-meta">
+            <span class="user-name" [title]="username">{{ username }}</span>
+            <span class="user-role">{{ roleLabel }}</span>
+          </span>
+        </div>
+        <button type="button" class="btn btn-light btn-sm" (click)="logout()">
+          <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+          Log out
+        </button>
+      </div>
+    </div>
+
+  </div>
+</nav>

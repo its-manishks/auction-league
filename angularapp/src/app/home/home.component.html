@@ -1,0 +1,91 @@
+<section class="hero">
+  <div class="container-app hero-grid">
+    <div>
+      <h1 class="hero-title">Run the player auction without the spreadsheet.</h1>
+      <p class="hero-copy">
+        Admins set up teams and the player pool. Organizers sell players to teams
+        on auction day, and every sale is checked against the team's remaining budget
+        before it goes through.
+      </p>
+      <div class="hero-actions">
+        <ng-container *ngIf="!isLoggedIn; else signedIn">
+          <a class="btn btn-primary btn-lg" routerLink="/signup">Create an account</a>
+          <a class="btn btn-light btn-lg" routerLink="/login">Sign in</a>
+        </ng-container>
+        <ng-template #signedIn>
+          <a class="btn btn-primary btn-lg" [routerLink]="dashboardRoute">
+            {{ dashboardLabel }}
+          </a>
+        </ng-template>
+      </div>
+    </div>
+
+    <!-- Illustration of a sale, not live data -->
+    <figure class="lot m-0" aria-label="Example of a player sale">
+      <div class="lot-head">
+        <span>Example lot</span>
+        <span class="badge-soft badge-unsold">Unsold</span>
+      </div>
+      <div class="lot-body">
+        <div class="lot-player">
+          <span class="entity-avatar" aria-hidden="true">R</span>
+          <div>
+            <div class="lot-name">R. Sharma</div>
+            <span class="cat cat-batsman">Batsman</span>
+            <span class="text-muted small ms-1">Age 29</span>
+          </div>
+        </div>
+        <div class="lot-price-label">Bidding price</div>
+        <div class="lot-price">200,000</div>
+        <div class="purse mt-3">
+          <div class="purse-figures">
+            <span>Chennai Chargers purse after sale</span>
+            <span class="purse-left">650,000 left</span>
+          </div>
+          <div class="purse-track"><span class="purse-fill" style="width: 35%"></span></div>
+        </div>
+      </div>
+      <div class="lot-foot" aria-hidden="true">
+        <span class="lot-fake-select">Chennai Chargers <i class="bi bi-chevron-down"></i></span>
+        <span class="btn btn-primary"><i class="bi bi-hammer"></i> Sell</span>
+      </div>
+    </figure>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container-app">
+    <h2 class="section-title">How an auction runs</h2>
+    <p class="section-lead">Three steps, split between two roles. Each person only sees the tools for their part.</p>
+
+    <ol class="flow">
+      <li>
+        <h3>Set up the teams</h3>
+        <p>Create each franchise with a maximum budget. You can rename a team or change its budget at any time.</p>
+        <span class="role-tag"><i class="bi bi-person-gear" aria-hidden="true"></i> Admin</span>
+      </li>
+      <li>
+        <h3>Build the player pool</h3>
+        <p>Add players with their age, category and bidding price. Every new player starts in the unsold pool.</p>
+        <span class="role-tag"><i class="bi bi-person-gear" aria-hidden="true"></i> Admin</span>
+      </li>
+      <li>
+        <h3>Sell to teams</h3>
+        <p>Pick a player, choose a team and sell. Sales that would go over a team's budget are blocked, and players can be released back to the pool.</p>
+        <span class="role-tag"><i class="bi bi-hammer" aria-hidden="true"></i> Organizer</span>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section class="pb-5" *ngIf="!isLoggedIn">
+  <div class="container-app">
+    <div class="cta-band">
+      <div>
+        <h2>Setting up a new season?</h2>
+        <p>Create an admin account to add teams, or an organizer account to run the sale.</p>
+      </div>
+      <a class="btn btn-light btn-lg" routerLink="/signup">Create an account</a>
+    </div>
+  </div>
+</section>

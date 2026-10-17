@@ -1,0 +1,104 @@
+<div class="auth">
+  <aside class="auth-aside">
+    <div>
+      <h2>Set up your auction.</h2>
+      <p>Choose the role that matches your part of auction day. You can create one account for each role.</p>
+      <ul class="auth-points">
+        <li><i class="bi bi-person-gear" aria-hidden="true"></i><span><strong class="text-white">Admin</strong> creates teams, sets budgets and manages the player pool</span></li>
+        <li><i class="bi bi-hammer" aria-hidden="true"></i><span><strong class="text-white">Organizer</strong> sells players to teams and releases them when needed</span></li>
+      </ul>
+    </div>
+    <span class="auth-foot">Auction League</span>
+  </aside>
+
+  <div class="auth-main">
+    <section class="auth-card" aria-labelledby="register-title">
+      <h1 id="register-title">Create an account</h1>
+      <p class="auth-lead">It takes less than a minute.</p>
+
+      <div class="alert alert-danger" role="alert" *ngIf="errorMessage">
+        <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+        <span>{{ errorMessage }}</span>
+      </div>
+      <div class="alert alert-success" role="status" *ngIf="successMessage">
+        <i class="bi bi-check-circle" aria-hidden="true"></i>
+        <span>{{ successMessage }}</span>
+      </div>
+
+      <form (ngSubmit)="register()" novalidate>
+
+        <fieldset class="field">
+          <legend class="form-label">I am signing up as</legend>
+          <div class="role-options">
+            <div class="role-option">
+              <input type="radio" id="role-admin" name="role" value="ADMIN" [(ngModel)]="role" />
+              <label for="role-admin">
+                <strong><i class="bi bi-person-gear" aria-hidden="true"></i> Admin</strong>
+                <span>Teams and player pool</span>
+              </label>
+            </div>
+            <div class="role-option">
+              <input type="radio" id="role-organizer" name="role" value="ORGANIZER" [(ngModel)]="role" />
+              <label for="role-organizer">
+                <strong><i class="bi bi-hammer" aria-hidden="true"></i> Organizer</strong>
+                <span>Runs the sale</span>
+              </label>
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="field">
+          <label class="form-label" for="username">Username<span class="req" aria-hidden="true">*</span></label>
+          <div class="input-icon">
+            <i class="bi bi-person" aria-hidden="true"></i>
+            <input id="username" name="username" type="text" class="form-control"
+                   autocomplete="username" placeholder="Choose a username"
+                   [class.is-invalid]="usernameError" [attr.aria-invalid]="!!usernameError"
+                   [(ngModel)]="username" (blur)="onUsernameBlur()" />
+          </div>
+          <label class="error-message" for="username" *ngIf="usernameError">{{ usernameError }}</label>
+        </div>
+
+        <div class="field">
+          <label class="form-label" for="password">Password<span class="req" aria-hidden="true">*</span></label>
+          <div class="input-group" [class.is-invalid]="passwordError">
+            <input id="password" name="password" class="form-control"
+                   autocomplete="new-password" placeholder="Create a password"
+                   [type]="showPassword ? 'text' : 'password'" [attr.aria-invalid]="!!passwordError"
+                   aria-describedby="password-rules"
+                   [(ngModel)]="password" (blur)="onPasswordBlur()" />
+            <button type="button" class="btn btn-reveal" (click)="showPassword = !showPassword"
+                    [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+                    [attr.aria-pressed]="showPassword">
+              <i class="bi" [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'" aria-hidden="true"></i>
+            </button>
+          </div>
+          <label class="error-message" for="password" *ngIf="passwordError">{{ passwordError }}</label>
+          <ul id="password-rules" class="pw-rules" aria-label="Password requirements">
+            <li *ngFor="let rule of passwordRules" [class.ok]="rule.ok">
+              <i class="bi" [ngClass]="rule.ok ? 'bi-check-circle-fill' : 'bi-circle'" aria-hidden="true"></i>
+              {{ rule.label }}
+            </li>
+          </ul>
+        </div>
+
+        <div class="field">
+          <label class="form-label" for="confirmPassword">Confirm password<span class="req" aria-hidden="true">*</span></label>
+          <input id="confirmPassword" name="confirmPassword" class="form-control"
+                 autocomplete="new-password" placeholder="Repeat the password"
+                 [type]="showPassword ? 'text' : 'password'"
+                 [class.is-invalid]="confirmPasswordError" [attr.aria-invalid]="!!confirmPasswordError"
+                 [(ngModel)]="confirmPassword" (blur)="onConfirmPasswordBlur()" />
+          <label class="error-message" for="confirmPassword" *ngIf="confirmPasswordError">{{ confirmPasswordError }}</label>
+        </div>
+
+        <button class="btn btn-primary btn-lg w-100 mt-2" type="submit" [disabled]="loading">
+          <span *ngIf="loading" class="spinner-border" role="status" aria-hidden="true"></span>
+          {{ loading ? 'Creating account…' : 'Create account' }}
+        </button>
+
+        <p class="auth-switch">Already registered? <a routerLink="/login">Sign in</a></p>
+      </form>
+    </section>
+  </div>
+</div>

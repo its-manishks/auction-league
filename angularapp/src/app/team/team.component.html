@@ -1,0 +1,162 @@
+<div class="team-list-wrap">
+  <section class="panel" aria-labelledby="teams-heading">
+    <div class="panel-head">
+      <div>
+        <h2 id="teams-heading" class="panel-title">
+          Teams <span class="badge-count">{{ teams.length }}</span>
+        </h2>
+        <p class="panel-sub">Budgets and how much of each purse has been spent.</p>
+      </div>
+      <div class="panel-tools">
+        <div class="input-icon" *ngIf="teams.length > 0">
+          <i class="bi bi-search" aria-hidden="true"></i>
+          <input type="search" class="form-control form-control-sm" placeholder="Search teams"
+                 aria-label="Search teams" name="teamSearch" [(ngModel)]="query" />
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" (click)="openCreate()">
+          <i class="bi bi-plus-lg" aria-hidden="true"></i> Add team
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading && teams.length === 0" aria-busy="true" aria-label="Loading teams">
+      <div class="skeleton-row" *ngFor="let r of [1, 2, 3]">
+        <span class="skeleton circle"></span>
+        <span class="skeleton" style="width: 30%"></span>
+        <span class="skeleton ms-auto" style="width: 20%"></span>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div *ngIf="!loading && loadError" class="state state-error" role="alert">
+      <div class="state-icon"><i class="bi bi-wifi-off" aria-hidden="true"></i></div>
+      <h3 class="state-title">Teams could not be loaded</h3>
+      <p class="state-text">{{ loadError }}</p>
+      <button type="button" class="btn btn-light btn-sm" (click)="retry.emit()">
+        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Try again
+      </button>
+    </div>
+
+    <!-- Empty -->
+    <div *ngIf="!loading && !loadError && teams.length === 0" class="state">
+      <div class="state-icon"><i class="bi bi-shield" aria-hidden="true"></i></div>
+      <h3 class="state-title">No teams yet</h3>
+      <p class="state-text">Add the first team and set its maximum budget. Organizers can then sell players to it.</p>
+      <button type="button" class="btn btn-primary btn-sm" (click)="openCreate()">
+        <i class="bi bi-plus-lg" aria-hidden="true"></i> Add team
+      </button>
+    </div>
+
+    <!-- No search results -->
+    <div *ngIf="teams.length > 0 && filteredTeams.length === 0" class="state">
+      <div class="state-icon"><i class="bi bi-search" aria-hidden="true"></i></div>
+      <h3 class="state-title">No teams match "{{ query }}"</h3>
+      <button type="button" class="btn btn-light btn-sm" (click)="query = ''">Clear search</button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive" *ngIf="filteredTeams.length > 0">
+      <table class="table table-app table-hover table-stack">
+        <caption class="visually-hidden">Teams with budget and squad size</caption>
+        <thead>
+          <tr>
+            <th scope="col">Team</th>
+            <th scope="col" class="col-num">Squad</th>
+            <th scope="col" class="col-num">Max budget</th>
+            <th scope="col">Purse</th>
+            <th scope="col" class="col-actions"><span class="visually-hidden">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let team of filteredTeams; trackBy: trackById"
+              [class.row-flash]="team.id === highlightId">
+            <td class="cell-lead">
+              <div class="entity">
+                <span class="entity-avatar team" aria-hidden="true">{{ initial(team.name) }}</span>
+                <div class="entity-text">
+                  <span class="cell-primary" [title]="team.name">{{ team.name }}</span>
+                </div>
+              </div>
+            </td>
+            <td class="col-num" data-label="Squad">
+              {{ squadSize[team.id!] || 0 }} {{ (squadSize[team.id!] || 0) === 1 ? 'player' : 'players' }}
+            </td>
+            <td class="col-num" data-label="Max budget"><span class="num">{{ team.maximumBudget | number }}</span></td>
+            <td data-label="Purse">
+              <div class="purse purse-compact" [ngClass]="purse(team).state">
+                <div class="purse-figures">
+                  <span>{{ purse(team).percent | number: '1.0-0' }}% spent</span>
+                  <span class="purse-left">{{ purse(team).left | number }} left</span>
+                </div>
+                <div class="purse-track" role="progressbar" [attr.aria-valuenow]="purse(team).percent | number: '1.0-0'"
+                     aria-valuemin="0" aria-valuemax="100" [attr.aria-label]="team.name + ' budget spent'">
+                  <span class="purse-fill" [style.width.%]="purse(team).percent"></span>
+                </div>
+              </div>
+            </td>
+            <td class="col-actions">
+              <button type="button" class="btn btn-quiet btn-sm" (click)="onEditTeam(team)"
+                      [attr.aria-label]="'Edit ' + team.name">
+                <i class="bi bi-pencil" aria-hidden="true"></i> Edit
+              </button>
+              <button type="button" class="btn btn-quiet-danger btn-sm" (click)="onDeleteTeam(team.id!)"
+                      [attr.aria-label]="'Delete ' + team.name">
+                <i class="bi bi-trash3" aria-hidden="true"></i> Delete
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Create / edit modal -->
+  <ng-container *ngIf="formOpen">
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true"
+         aria-labelledby="team-form-title" (click)="onBackdrop($event)">
+      <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" (ngSubmit)="submit()" novalidate autocomplete="off">
+          <div class="modal-header">
+            <h2 id="team-form-title" class="modal-title">{{ isEdit ? 'Edit team' : 'Add a team' }}</h2>
+            <button type="button" class="btn-close" aria-label="Close" (click)="onCancelEditTeam()"></button>
+          </div>
+
+          <div class="modal-body">
+            <div class="alert alert-danger" role="alert" *ngIf="formError">
+              <i class="bi bi-exclamation-circle" aria-hidden="true"></i><span>{{ formError }}</span>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="teamName">Team name<span class="req" aria-hidden="true">*</span></label>
+              <input #firstField #nameCtl="ngModel" id="teamName" name="teamName" type="text" class="form-control"
+                     placeholder="e.g. Mumbai Mavericks" maxlength="80"
+                     [class.is-invalid]="(nameCtl.touched || submitted) && nameError"
+                     [(ngModel)]="model.name" />
+              <div class="error-message" *ngIf="(nameCtl.touched || submitted) && nameError">{{ nameError }}</div>
+            </div>
+
+            <div>
+              <label class="form-label" for="teamBudget">Maximum budget<span class="req" aria-hidden="true">*</span></label>
+              <input #budgetCtl="ngModel" id="teamBudget" name="teamBudget" type="number" class="form-control"
+                     placeholder="e.g. 1000000" min="1" step="any" inputmode="decimal"
+                     [class.is-invalid]="(budgetCtl.touched || submitted) && budgetError"
+                     [(ngModel)]="model.maximumBudget" />
+              <div class="error-message" *ngIf="(budgetCtl.touched || submitted) && budgetError">{{ budgetError }}</div>
+              <div class="form-text" *ngIf="!((budgetCtl.touched || submitted) && budgetError)">{{ maxBidStatus() }}</div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light" (click)="onCancelEditTeam()" [disabled]="saving">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="saving">
+              <span *ngIf="saving" class="spinner-border" role="status" aria-hidden="true"></span>
+              {{ saving ? 'Saving…' : (isEdit ? 'Save changes' : 'Add team') }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </ng-container>
+</div>
